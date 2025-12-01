@@ -1,49 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>8-Beat Kick Loop</title>
+<title>Lo-Fi 8-Beat Kick Loop</title>
 <script src="https://cdn.jsdelivr.net/npm/tone@next"></script>
 <style>
-  body { background:#121212; color:#eee; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
-  button { padding:14px 28px; background:#444; border:none; border-radius:8px; cursor:pointer; color:#fff; font-size:18px; }
-  button:hover { background:#666; }
+  body {
+    background: #1a1a1a;
+    color: #ddd;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 20px;
+  }
+  button {
+    padding: 14px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #444;
+    color: #fff;
+  }
+  button:hover { background: #666; }
 </style>
 </head>
 <body>
 
-<button id="startBtn">Start Kick Loop</button>
+<button id="startBtn">Comenzar</button>
+<button id="stopBtn">Detener</button>
 
 <script>
-// Transport setup
+// Configuración del transporte
 Tone.Transport.bpm.value = 90;
 Tone.Transport.loop = true;
-Tone.Transport.loopEnd = "2m"; // 2 measures = 8 beats in 4/4
+Tone.Transport.loopEnd = "2m"; // 8 beats (2 compases en 4/4)
 
-// Kick
+// Sonido Lo-Fi del Kick
 const kick = new Tone.MembraneSynth({
-  pitchDecay: 0.05,
+  pitchDecay: 0.08,
   octaves: 4,
-  envelope: { attack: 0.001, decay: 0.3, sustain: 0.0, release: 0.15 }
+  envelope: {
+    attack: 0.001,
+    decay: 0.3,
+    sustain: 0,
+    release: 0.2
+  }
+});
+
+// Un filtro suave para un toque Lo-Fi cálido
+const lowpass = new Tone.Filter({
+  type: "lowpass",
+  frequency: 1200,
+  rolloff: -24,
 }).toDestination();
 
-// 8-beat loop (one kick every beat)
-const sequence = new Tone.Sequence((time) => {
-  kick.triggerAttackRelease("C1", "8n", time);
-}, [0,1,2,3,4,5,6,7], "4n").start(0);
+kick.connect(lowpass);
 
-// Button control
-let playing = false;
-document.getElementById("startBtn").addEventListener("click", async() => {
-  await Tone.start(); // required before audio
-  if (!playing) {
-    Tone.Transport.start();
-    document.getElementById("startBtn").textContent = "Stop Kick Loop";
-  } else {
-    Tone.Transport.stop();
-    document.getElementById("startBtn").textContent = "Start Kick Loop";
-  }
-  playing = !playing;
+// Loop de golpe (1 golpe por beat → 8 golpes)
+const seq = new Tone.Sequence((time) => {
+  kick.triggerAttackRelease("C1", "8n", time);
+}, [...Array(8).keys()], "4n").start(0);
+
+// Botones
+document.getElementById("startBtn").addEventListener("click", async () => {
+  await Tone.start(); // habilitar audio
+  Tone.Transport.start();
+});
+
+document.getElementById("stopBtn").addEventListener("click", () => {
+  Tone.Transport.stop();
 });
 </script>
 
