@@ -2,85 +2,46 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Lo-Fi Loop</title>
+<title>8-Beat Kick Loop</title>
 <script src="https://cdn.jsdelivr.net/npm/tone@next"></script>
 <style>
-  body {
-    background: #1d1d1d;
-    color: white;
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
-  button {
-    padding: 16px 30px;
-    background: #444;
-    border: none;
-    border-radius: 10px;
-    font-size: 20px;
-    color: white;
-    cursor: pointer;
-  }
-  button:hover { background: #666; }
+  body { background:#121212; color:#eee; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+  button { padding:14px 28px; background:#444; border:none; border-radius:8px; cursor:pointer; color:#fff; font-size:18px; }
+  button:hover { background:#666; }
 </style>
 </head>
 <body>
 
-<button id="playBtn">Start / Stop</button>
+<button id="startBtn">Start Kick Loop</button>
 
 <script>
-// INIT
+// Transport setup
 Tone.Transport.bpm.value = 90;
 Tone.Transport.loop = true;
-Tone.Transport.loopEnd = "2m"; // 8 beats
+Tone.Transport.loopEnd = "2m"; // 2 measures = 8 beats in 4/4
 
 // Kick
-const kick = new Tone.MembraneSynth().toDestination();
-
-// Hi-hat
-const hihat = new Tone.NoiseSynth({
-  volume: -6,
-  envelope: { attack: 0.001, decay: 0.05, sustain: 0 }
+const kick = new Tone.MembraneSynth({
+  pitchDecay: 0.05,
+  octaves: 4,
+  envelope: { attack: 0.001, decay: 0.3, sustain: 0.0, release: 0.15 }
 }).toDestination();
 
-// Bass
-const bass = new Tone.Synth({
-  oscillator: { type: "triangle" },
-  envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.3 }
-}).toDestination();
-
-// Harmony
-const harmony = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: "sine" },
-  envelope: { attack: 1.0, release: 2.0 }
-}).toDestination();
-
-// Patterns
-new Tone.Sequence((time, step) => {
-  if (step === 0 || step === 4) kick.triggerAttackRelease("C1", "8n", time);
-  hihat.triggerAttackRelease("16n", time);
-}, [...Array(8).keys()], "8n").start(0);
-
-// Bassline
-new Tone.Sequence((time, note) => {
-  if (note) bass.triggerAttackRelease(note, "8n", time);
-}, ["C2", null, "G1", null, "C2", null, "G1", null], "8n").start(0);
-
-// Harmony (every 2 measures)
-Tone.Transport.scheduleRepeat((time) => {
-  harmony.triggerAttackRelease(["C4","Eb4","G4"], "2m", time);
-}, "2m");
+// 8-beat loop (one kick every beat)
+const sequence = new Tone.Sequence((time) => {
+  kick.triggerAttackRelease("C1", "8n", time);
+}, [0,1,2,3,4,5,6,7], "4n").start(0);
 
 // Button control
 let playing = false;
-document.getElementById("playBtn").addEventListener("click", async () => {
+document.getElementById("startBtn").addEventListener("click", async() => {
+  await Tone.start(); // required before audio
   if (!playing) {
-    await Tone.start();
     Tone.Transport.start();
+    document.getElementById("startBtn").textContent = "Stop Kick Loop";
   } else {
     Tone.Transport.stop();
+    document.getElementById("startBtn").textContent = "Start Kick Loop";
   }
   playing = !playing;
 });
