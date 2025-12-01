@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lo-Fi 8-Beat Loop</title>
+<script src="https://cdn.jsdelivr.net/npm/tone@next"></script>
+<style>
+  body {
+    background: #1e1e1e;
+    color: #eee;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+  }
+  button {
+    padding: 12px 24px;
+    font-size: 18px;
+    background: #444;
+    border: none;
+    color: #eee;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #666;
+  }
+</style>
+</head>
+<body>
+
+<button id="start">Start / Stop</button>
+
+<script>
+// Transport
+Tone.Transport.bpm.value = 90;
+Tone.Transport.loop = true;
+Tone.Transport.loopEnd = "2m"; // 8 beats (2 measures in 4/4)
+
+// Kick (simple low tone)
+const kick = new Tone.MembraneSynth({
+  pitchDecay: 0.05,
+  octaves: 4,
+  envelope: { sustain: 0, release: 0.2 }
+}).toDestination();
+
+// Hi-Hat (noise with filter)
+const hihat = new Tone.NoiseSynth({
+  volume: -8,
+  filter: { type: "highpass", frequency: 4000 },
+  envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+}).toDestination();
+
+// Bass
+const bass = new Tone.Synth({
+  oscillator: { type: "sine" },
+  envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.5 }
+}).toDestination();
+
+// Harmony pad
+const harmony = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: "triangle" },
+  envelope: { attack: 1.0, sustain: 0.4, release: 2.0 }
+}).toDestination();
+
+// Patterns
+// Kick on beats 1 and 3
+Tone.Transport.scheduleRepeat((time) => {
+  kick.triggerAttackRelease("C1", "8n", time);
+}, "1m");
+
+// Hi-hat every beat
+Tone.Transport.scheduleRepeat((time) => {
+  hihat.triggerAttackRelease("16n", time);
+}, "4n");
+
+// Bassline simple C to G
+const bassNotes = ["C2", null, "G1", null, "C2", null, "G1", null];
+bassNotes.forEach((note, i) => {
+  if (note) {
+    Tone.Transport.schedule((time) => {
+      bass.triggerAttackRelease(note, "8n", time);
+    }, `0:0:${i}`);
+  }
+});
+
+// Harmony every 2 measures
+Tone.Transport.scheduleRepeat((time) => {
+  harmony.triggerAttackRelease(["C4", "Eb4", "G4"], "2m", time);
+}, "2m");
+
+// Button toggle
+let playing = false;
+document.getElementById("start").addEventListener("click", async () => {
+  if (!playing) {
+    await Tone.start();
+    Tone.Transport.start();
+  } else {
+    Tone.Transport.stop();
+  }
+  playing = !playing;
+});
+</script>
+
+</body>
+</html>
